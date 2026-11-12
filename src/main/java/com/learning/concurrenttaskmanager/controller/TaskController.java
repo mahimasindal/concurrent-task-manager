@@ -2,9 +2,11 @@
 package com.learning.concurrenttaskmanager.controller;
 
 import com.learning.concurrenttaskmanager.dto.CreateTaskRequest;
+import com.learning.concurrenttaskmanager.dto.TaskExecutionResponse;
 import com.learning.concurrenttaskmanager.dto.TaskResponse;
+import com.learning.concurrenttaskmanager.entity.TaskExecution;
 import com.learning.concurrenttaskmanager.entity.TaskStatus;
-import com.learning.concurrenttaskmanager.service.TaskProcessingService;
+import com.learning.concurrenttaskmanager.service.TaskExecutionService;
 import com.learning.concurrenttaskmanager.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -19,12 +21,11 @@ import java.util.Map;
 public class TaskController {
 
     private final TaskService taskService;
-    private final TaskProcessingService taskProcessingService;
+    private final TaskExecutionService taskExecutionService;
 
-    public TaskController(TaskService taskService, TaskProcessingService taskProcessingService) {
+    public TaskController(TaskService taskService, TaskExecutionService taskExecutionService) {
         this.taskService = taskService;
-        this.taskProcessingService = taskProcessingService;
-
+        this.taskExecutionService = taskExecutionService;
     }
 
     @PostMapping
@@ -67,8 +68,7 @@ public class TaskController {
             @PathVariable Long id) {
 
         taskService.getTaskById(id);
-
-        taskProcessingService.processTask(id);
+        taskService.submitTask(id);
 
         Map<String, Object> response = Map.of(
                 "message", "Task submitted for processing",
@@ -76,5 +76,10 @@ public class TaskController {
         );
 
         return ResponseEntity.accepted().body(response);
+    }
+
+    @GetMapping("/{id}/executions")
+    public ResponseEntity<List<TaskExecutionResponse>> getAllExecutions(@PathVariable Long id){
+       return ResponseEntity.ok( taskExecutionService.getTaskExecutions(id));
     }
 }

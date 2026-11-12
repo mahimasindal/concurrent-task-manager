@@ -16,4 +16,6 @@ public interface TaskService {
     List<TaskResponse> getAllTasks();
 
     List<TaskResponse> getTasksByStatus(TaskStatus status);
+
+    void submitTask(Long id);
 }

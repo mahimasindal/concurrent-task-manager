@@ -1,6 +1,7 @@
 package com.learning.concurrenttaskmanager.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name="tasks")
@@ -17,6 +18,9 @@ public class Task {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TaskStatus status = TaskStatus.PENDING;
+
+    @OneToMany(mappedBy = "task")
+    private List<TaskExecution> executions;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -66,6 +70,11 @@ public class Task {
 
     public void setStatus(TaskStatus status) {
         this.status = status;
+    }
+
+    public void addExecution(TaskExecution execution) {
+        executions.add(execution);
+        execution.setTask(this);
     }
 
     @PrePersist

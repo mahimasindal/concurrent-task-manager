@@ -3,6 +3,7 @@ package com.learning.concurrenttaskmanager.service;
 import com.learning.concurrenttaskmanager.entity.Task;
 import com.learning.concurrenttaskmanager.entity.TaskStatus;
 import com.learning.concurrenttaskmanager.exception.TaskNotFoundException;
+import com.learning.concurrenttaskmanager.exception.TaskSubmissionNotAllowedException;
 import com.learning.concurrenttaskmanager.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,11 @@ import java.util.Optional;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final TaskProcessingService taskProcessingService;
 
-    public TaskServiceImpl(TaskRepository taskRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository,TaskProcessingService taskProcessingService) {
         this.taskRepository = taskRepository;
+        this.taskProcessingService = taskProcessingService;
     }
 
     @Transactional
@@ -46,6 +49,22 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<TaskResponse> getTasksByStatus(TaskStatus status) {
         return taskRepository.findByStatus(status).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    public void submitTask(Long id) {
+        int isUpdated = taskRepository.updateStatusIfEligible(id,TaskStatus.PROCESSING,List.of(TaskStatus.PENDING, TaskStatus.FAILED));
+
+        if (isUpdated==0) {
+            Task task = taskRepository.findById(id)
+                    .orElseThrow(() -> new TaskNotFoundException(id));
+
+            throw new TaskSubmissionNotAllowedException(
+                    "Task cannot be submitted in status: " + task.getStatus()
+            );
+        }
+
+        taskProcessingService.processTask(id);
     }
 
     private TaskResponse toResponse(Task task) {
